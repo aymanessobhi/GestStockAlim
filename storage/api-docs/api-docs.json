@@ -1,0 +1,300 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "GestStockAlim API",
+        "version": "0.1"
+    },
+    "paths": {
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get all products",
+                "description": "Returns a list of all products.",
+                "operationId": "getProducts",
+                "responses": {
+                    "200": {
+                        "description": "List of products retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "products": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Product"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/possible-recipes": {
+            "get": {
+                "tags": [
+                    "Recipes"
+                ],
+                "summary": "Get possible recipes based on available stock",
+                "description": "Returns possible recipes considering available stock quantities for required products.",
+                "operationId": "getPossibleRecipes",
+                "responses": {
+                    "200": {
+                        "description": "List of possible recipes retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "possibleRecipes": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Recipe"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                }
+            }
+        },
+        "/api/validate-recipe": {
+            "post": {
+                "tags": [
+                    "Recipes"
+                ],
+                "summary": "Validate a recipe and update stock",
+                "description": "Validates a recipe and updates stock quantities for associated products.",
+                "operationId": "validateRecipe",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "recipeId"
+                                ],
+                                "properties": {
+                                    "recipeId": {
+                                        "description": "ID of the recipe to be validated",
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Recipe validated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "description": "Success message",
+                                            "type": "string"
+                                        },
+                                        "updatedAssociatedProducts": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "quantity": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                }
+            }
+        },
+        "/api/products-in-stock": {
+            "get": {
+                "tags": [
+                    "Stock"
+                ],
+                "summary": "Get products in stock",
+                "description": "Returns a list of products in stock.",
+                "operationId": "productsInStock",
+                "responses": {
+                    "200": {
+                        "description": "List of products in stock retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "productsInStock": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Stock"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                }
+            }
+        },
+        "/api/add-product-to-stock": {
+            "post": {
+                "tags": [
+                    "Stock"
+                ],
+                "summary": "Add a product to stock",
+                "description": "Adds a product to the stock with quantity and expiration date.",
+                "operationId": "addProductInStock",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "product_id",
+                                    "quantity",
+                                    "expiration_date"
+                                ],
+                                "properties": {
+                                    "product_id": {
+                                        "description": "ID of the product",
+                                        "type": "integer"
+                                    },
+                                    "quantity": {
+                                        "description": "Quantity of the product",
+                                        "type": "integer"
+                                    },
+                                    "expiration_date": {
+                                        "description": "Expiration date of the product",
+                                        "type": "string",
+                                        "format": "date"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Product added to stock successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "description": "Success message",
+                                            "type": "string"
+                                        },
+                                        "stock": {
+                                            "$ref": "#/components/schemas/Stock"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Product": {
+                "title": "Product",
+                "description": "Product model",
+                "properties": {
+                    "id": {
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "Product name",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Recipe": {
+                "title": "Recipe",
+                "description": "Recipe model",
+                "properties": {
+                    "id": {
+                        "description": "Recipe ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "Recipe name",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Stock": {
+                "title": "Stock",
+                "description": "Stock model",
+                "properties": {
+                    "id": {
+                        "description": "Stock ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "product_id": {
+                        "description": "Product ID associated with the stock",
+                        "type": "integer"
+                    },
+                    "quantity": {
+                        "description": "Quantity of the product in stock",
+                        "type": "integer"
+                    },
+                    "expiration_date": {
+                        "description": "Expiration date of the product in stock",
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    }
+}
