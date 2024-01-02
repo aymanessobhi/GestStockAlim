@@ -58,35 +58,42 @@ class RecipeController extends Controller
     public function getPossibleRecipes()
     {
         try {
-            // Retrieve all recipes with associated products
-            $possibleRecipes = Recipe::with('products')->get();
-
+            // Retrieve all recipes with associated products and their quantities from the pivot table
+            $possibleRecipes = Recipe::with(['products' => function ($query) {
+                $query->withPivot('quantity');
+            }])->get();
+    
             // Retrieve all stocks with their associated products
             $productsInStock = Stock::with('product')->get();
-
+    
             foreach ($possibleRecipes as $recipe) {
-                $missingProducts = [];
-
                 foreach ($recipe->products as $product) {
-                    // Check if the product required for the recipe is in stock
+                    // Find the stock entry corresponding to the product
                     $stockedProduct = $productsInStock
                         ->where('product_id', $product->id)
                         ->first();
-
+    
                     // If the product is not in stock for the recipe or quantity is 0
                     if (!$stockedProduct || $stockedProduct->quantity <= 0) {
                         $product->status = 'unavailable';
                     } else {
                         $product->status = 'available';
+    
+                        // Get the quantity from the pivot table
+                        $quantityInRecipe = $product->pivot->quantity ?? 1; // Assuming default quantity is 1 if not specified
+    
+                        // Add the quantity from recipes_products to the product object
+                        $product->quantity_in_recipe = $quantityInRecipe;
                     }
                 }
             }
-
+    
             return response()->json(['possibleRecipes' => $possibleRecipes], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    
 /**
  * Validate a recipe and update stock accordingly
  *
@@ -143,15 +150,19 @@ class RecipeController extends Controller
             $recipe = Recipe::findOrFail($recipeId);
             // Start a database transaction
             DB::beginTransaction();
-            // Get associated products
-            $products = $recipe->products;
+            // Get associated products with their quantities from the pivot table
+            $products = $recipe->products()->withPivot('quantity')->get();
             foreach ($products as $product) {
                 // Find the stock entry corresponding to the product
                 $stockEntry = Stock::where('product_id', $product->id)->first();
-                if ($stockEntry && $stockEntry->quantity > 0) {
-                    // Decrement the quantity by one
-                    $stockEntry->quantity -= 1;
+                if ($stockEntry && $stockEntry->quantity >= $product->pivot->quantity) {
+                    // Decrement the stock quantity by the quantity required for the recipe
+                    $stockEntry->quantity -= $product->pivot->quantity;
                     $stockEntry->save();
+                } else {
+                    // Rollback transaction if any product does not have sufficient stock
+                    DB::rollBack();
+                    return response()->json(['error' => 'Insufficient stock for the recipe'], 400);
                 }
             }
             // Commit the transaction if all updates are successful
@@ -175,7 +186,7 @@ class RecipeController extends Controller
             return response()->json($response, 200);
         } catch (\Exception $e) {
             // Rollback the transaction in case of any error
-            DB::rollback();
+            DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

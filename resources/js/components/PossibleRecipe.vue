@@ -62,7 +62,9 @@ const goBack = () => {
           <ul>
             <li v-for="(product, index) in item.products" :key="index" :class="getProductStatus(product)">
               <span :style="{ color: product.status === 'unavailable' ? 'red' : 'inherit' }">
-                {{ product.name }}
+                {{ product.name }} ||  
+              <span v-if="product.quantity_in_recipe > 0"> {{ product.quantity_in_recipe }}</span>
+              <span v-else>Unavailable</span>
               </span>
             </li>
           </ul>
